@@ -7,13 +7,17 @@ const app = express();
 app.use(morgan("dev"));
 app.use(helmet());
 app.use(express.static(join(__dirname, "public")));
-app.use(cors)
+// app.use(cors)
 
 app.get("/auth_config.json", (req, res) => {
   res.sendFile(join(__dirname, "auth_config.json"));
 });
 
 app.get("/*", (_, res) => {
+  res.sendFile(join(__dirname, "hello.html"));
+});
+
+app.get("/", (_, res) => {
   res.sendFile(join(__dirname, "hello.html"));
 });
 
