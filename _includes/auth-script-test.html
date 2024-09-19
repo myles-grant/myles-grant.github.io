@@ -1,3 +1,104 @@
 <script type="text/javascript">
-	alert("Hello World")
+	var auth0 = null;
+
+	// Function to set a cookie with Secure and SameSite attributes
+	function setCookie(name, value, days) {
+	  var expires = "";
+	  if (days) {
+		  var date = new Date();
+		  date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+		  expires = "; expires=" + date.toUTCString();
+	  }
+	  // Secure flag is necessary when running on HTTPS (like GitHub Pages)
+	  document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax; Secure";
+	}
+
+	// Function to get a cookie by name
+	function getCookie(name) {
+		var nameEQ = name + "=";
+		var ca = document.cookie.split(';');
+		for(var i=0; i < ca.length; i++) {
+			var c = ca[i];
+			while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+			if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+		}
+		return null;
+	}
+
+	window.onload = async () => {
+	  auth0 = await createAuth0Client({
+		domain: "dev-qirtwh6cktfuc8ap.us.auth0.com",
+		client_id: "CmiF5zKFREhl7eEmcL8p2z5vkU8Fbzk5",
+		cacheLocation: 'localstorage', // Optional: to persist the user's session
+		useRefreshTokens: true // Optional: to use refresh tokens
+	  });
+
+	  const isAuthenticated = await auth0.isAuthenticated();
+
+	  if (isAuthenticated) {
+		document.getElementById("btn-logout").style.display = "block";
+		document.getElementById("btn-login").style.display = "none";
+		const user = await auth0.getUser();
+		document.getElementById("profile").innerText = `Hello, ${user.name}`;
+		setCookie("email", user.email, 7); // Save the user's name in cookies for 7 days
+	  } else {
+		document.getElementById("btn-login").style.display = "block";
+		document.getElementById("btn-logout").style.display = "none";
+	  }
+
+	  // Display gallery items based on authentication status
+	  document.querySelectorAll('.gallery-item').forEach(item => {
+		const showAttribute = item.getAttribute('data-show');
+		
+		if (showAttribute === 'Show everytime' || 
+			(showAttribute === 'Show only when Authenticated' && isAuthenticated)) {
+		  item.style.display = 'block';
+		}
+	  });
+	};
+
+	const login = async () => {
+	  try {
+		await auth0.loginWithPopup();
+		const user = await auth0.getUser();
+		
+		document.getElementById("profile").innerText = `Hello, ${user.name}`;
+		setCookie("email", user.email, 7); // Save the user's name in cookies for 7 days
+		document.getElementById("btn-logout").style.display = "block";
+		document.getElementById("btn-login").style.display = "none";
+
+		// Re-check authentication and update the gallery display
+		const isAuthenticated = true;
+		document.querySelectorAll('.gallery-item').forEach(item => {
+		  const showAttribute = item.getAttribute('data-show');
+
+		  if (showAttribute === 'Show everytime' || 
+			  (showAttribute === 'Show only when Authenticated' && isAuthenticated)) {
+			item.style.display = 'block';
+		  }
+		});
+
+	  } catch (error) {
+		console.error("Login failed", error);
+	  }
+	};
+
+	const logout = () => {
+	  auth0.logout({
+		localOnly: true // Ensures it logs out only locally
+	  });
+	  document.getElementById("btn-logout").style.display = "none";
+	  document.getElementById("btn-login").style.display = "block";
+	  document.getElementById("profile").innerText = "";
+
+	  // Re-check authentication and update the gallery display
+	  const isAuthenticated = false;
+	  document.querySelectorAll('.gallery-item').forEach(item => {
+		const showAttribute = item.getAttribute('data-show');
+
+		if (showAttribute !== 'Show everytime') {
+		  item.style.display = 'none';
+		}
+	  });
+	};
 </script>
